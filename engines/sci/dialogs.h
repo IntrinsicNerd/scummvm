@@ -53,6 +53,7 @@ public:
 	// OptionsContainerWidget API
 	void load() override;
 	bool save() override;
+	void handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 data) override;
 
 private:
 	// OptionsContainerWidget API
@@ -61,6 +62,11 @@ private:
 	Common::String _guiOptions;
 	Common::HashMap<Common::String, GUI::CheckboxWidget *> _checkboxes;
 	Common::HashMap<Common::String, GUI::PopUpWidget *> _popUps;
+
+	bool _isPhant2;
+	GUI::SliderWidget *_phant2VolumeSlider;
+	GUI::StaticTextWidget *_phant2VolumeValue;
+	void updatePhant2VolumeLabel();
 };
 
 extern const ADExtraGuiOptionsMap optionsList[];

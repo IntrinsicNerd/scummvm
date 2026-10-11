@@ -29,14 +29,41 @@
 #include "sci/detection.h"
 #include "sci/dialogs.h"
 #include "sci/sci.h"
+#include "sci/engine/guest_additions.h"
 
 #include "sci/detection_options.h"
 
 namespace Sci {
 
+enum {
+	kPhant2VolumeCapChanged = 'p2vc'
+};
+
 OptionsWidget::OptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain) :
 		OptionsContainerWidget(boss, name, "SciGameOptionsDialog", domain) {
 	_guiOptions = ConfMan.get("guioptions", domain);
+
+	_isPhant2 = (ConfMan.get("gameid", domain) == "phantasmagoria2");
+	_phant2VolumeSlider = nullptr;
+	_phant2VolumeValue = nullptr;
+	if (_isPhant2) {
+		GUI::StaticTextWidget *capLabel = new GUI::StaticTextWidget(widgetsBoss(),
+			_dialogLayout + ".phant2_volume_cap_desc",
+			_("Music/SFX vs. movie dialogue:"),
+			_("How far the in-game music and sound effects sit below movie dialogue. "
+			  "Phantasmagoria 2 plays speech inside its movies, so lowering this is the "
+			  "only way to stop music burying it. Around -20 dB is a normal mix."));
+		capLabel->setAlign(Graphics::kTextAlignRight);
+
+		_phant2VolumeSlider = new GUI::SliderWidget(widgetsBoss(),
+			_dialogLayout + ".phant2_volume_cap", Common::U32String(), kPhant2VolumeCapChanged);
+		_phant2VolumeSlider->setMinValue(kPhant2VolumeCapMin);
+		_phant2VolumeSlider->setMaxValue(kPhant2VolumeCapMax);
+
+		_phant2VolumeValue = new GUI::StaticTextWidget(widgetsBoss(),
+			_dialogLayout + ".phant2_volume_cap_value", Common::U32String());
+		_phant2VolumeValue->setFlags(GUI::WIDGET_CLEARBG);
+	}
 
 	for (const ADExtraGuiOptionsMap *entry = optionsList; entry->guioFlag; ++entry)
 		if (checkGameGUIOption(entry->guioFlag, _guiOptions))
@@ -67,6 +94,11 @@ void OptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::String &
 		layouts.addWidget(entry->configOption, "PopUp").closeLayout();
 	}
 
+	layouts.addLayout(GUI::ThemeLayout::kLayoutHorizontal).addPadding(0, 0, 0, 0);
+	layouts.addWidget("phant2_volume_cap_desc", "OptionsLabel");
+	layouts.addWidget("phant2_volume_cap", "Slider");
+	layouts.addWidget("phant2_volume_cap_value", "ShortOptionsLabel").closeLayout();
+
 	layouts.closeLayout().closeDialog();
 }
 
@@ -78,6 +110,21 @@ void OptionsWidget::load() {
 	for (const PopUpOptionsMap *entry = popUpOptionsList; entry->guioFlag; ++entry)
 		if (checkGameGUIOption(entry->guioFlag, _guiOptions))
 			_popUps[entry->configOption]->setSelectedTag(ConfMan.getInt(entry->configOption, _domain));
+
+	if (_phant2VolumeSlider != nullptr) {
+		int cap = kPhant2VolumeMax;
+		if (ConfMan.hasKey(PHANT2_VOLUME_CAP_CONFIG_KEY, _domain)) {
+			cap = ConfMan.getInt(PHANT2_VOLUME_CAP_CONFIG_KEY, _domain);
+		}
+		if (cap < kPhant2VolumeCapMin) {
+			cap = kPhant2VolumeCapMin;
+		}
+		if (cap > kPhant2VolumeCapMax) {
+			cap = kPhant2VolumeCapMax;
+		}
+		_phant2VolumeSlider->setValue(cap);
+		updatePhant2VolumeLabel();
+	}
 
 	// If the deprecated native_fb01 option is set, use it to set midi_mode
 	if (ConfMan.hasKey("native_fb01", _domain) && ConfMan.getBool("native_fb01", _domain))
@@ -93,10 +140,36 @@ bool OptionsWidget::save() {
 		if (checkGameGUIOption(entry->guioFlag, _guiOptions))
 			ConfMan.setInt(entry->configOption, _popUps[entry->configOption]->getSelectedTag(), _domain);
 
+	if (_phant2VolumeSlider != nullptr) {
+		ConfMan.setInt(PHANT2_VOLUME_CAP_CONFIG_KEY, _phant2VolumeSlider->getValue(), _domain);
+	}
+
 	// Remove deprecated option
 	ConfMan.removeKey("native_fb01", _domain);
 
 	return true;
+}
+
+void OptionsWidget::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 data) {
+	switch (cmd) {
+	case kPhant2VolumeCapChanged:
+		updatePhant2VolumeLabel();
+		break;
+	default:
+		GUI::OptionsContainerWidget::handleCommand(sender, cmd, data);
+		break;
+	}
+}
+
+void OptionsWidget::updatePhant2VolumeLabel() {
+	if (_phant2VolumeValue == nullptr || _phant2VolumeSlider == nullptr) {
+		return;
+	}
+	const int cap = _phant2VolumeSlider->getValue();
+	// Volume is a linear amplitude multiplier, so report dB: that is the number
+	// that predicts what the user will actually hear.
+	const double decibels = 20.0 * log10((double)cap / (double)kPhant2VolumeCapMax);
+	_phant2VolumeValue->setLabel(Common::String::format("%.1f dB", decibels));
 }
 
 } // End of namespace Sci

@@ -13942,7 +13942,7 @@ static const uint16 phant2AudioVolumeSignature[] = {
 	SIG_END
 };
 
-static const uint16 phant2AudioVolumePatch[] = {
+static uint16 phant2AudioVolumePatch[] = {
 	0x39, kPhant2VolumeMax,              // pushi (our custom volume max)
 	0x39, 0x14 * kPhant2VolumeMax / 127, // pushi (ratio of original value)
 	PATCH_END
@@ -27244,6 +27244,16 @@ void ScriptPatcher::processScript(uint16 scriptNr, SciSpan<byte> scriptData) {
 
 			// Do additional game-specific initialization
 			switch (gameId) {
+#ifdef ENABLE_SCI32
+			case GID_PHANTASMAGORIA2: {
+				// The in-game audio ceiling is a user setting, so stamp the current
+				// value into the slider-limit patch before any script is patched.
+				const int cap = phant2VolumeCap();
+				phant2AudioVolumePatch[1] = (uint16)cap;
+				phant2AudioVolumePatch[3] = (uint16)(0x14 * cap / kPhant2VolumeCapMax);
+				break;
+			}
+#endif
 			case GID_FREDDYPHARKAS:
 				if (_isMacSci11 && !g_sci->getResMan()->testResource(ResourceId(kResourceTypeView, 844))) {
 					enablePatch(signatureTable, "Mac: skip broken hop singh scene");

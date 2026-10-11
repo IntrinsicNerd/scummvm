@@ -675,6 +675,7 @@ ADDetectedGame SciMetaEngine::fallbackDetectExtern(uint md5Bytes, const FileMap 
 }
 
 void SciMetaEngine::registerDefaultSettings(const Common::String &target) const {
+	ConfMan.registerDefault(PHANT2_VOLUME_CAP_CONFIG_KEY, 13);
 	for (const ADExtraGuiOptionsMap *entry = optionsList; entry->guioFlag; ++entry)
 		ConfMan.registerDefault(entry->option.configOption, entry->option.defaultState);
 

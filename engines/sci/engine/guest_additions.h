@@ -38,14 +38,30 @@ enum {
 	// the normal ScummVM launcher volume controls, but movie dialogue cannot be
 	// heard if the game audio is at the same level as movies. The game normally
 	// sets defaults so that the in-game volume is 85 and movies are 127, so we
-	// will just use 85 as the maximum volume.
+	// use 85 as the default, which the player can adjust per game (phant2VolumeCap).
 	kPhant2VolumeMax       = 85,
+	kPhant2VolumeCapMin    = 7,   // below this the derived slider page size rounds to 0
+	kPhant2VolumeCapMax    = 127, // movie volume, and the one-byte pushi ceiling
 
 	kRamaVolumeMax         = 16,
 	kLSL6UIVolumeMax       = 13,
 	kHoyle5VolumeMax       = 8,
 	kLSL6HiresSubtitleFlag = 105
 };
+
+/**
+ * Config key holding the Phantasmagoria 2 in-game audio ceiling, measured
+ * against movie volume (kPhant2VolumeCapMax). Shown as a slider in the
+ * game's options tab.
+ */
+#define PHANT2_VOLUME_CAP_CONFIG_KEY "phant2_volume_cap"
+
+/**
+ * The Phantasmagoria 2 in-game audio ceiling actually in force: the user
+ * setting if there is one, otherwise kPhant2VolumeMax, clamped to a usable
+ * range.
+ */
+int phant2VolumeCap();
 
 /**
  * The GuestAdditions class hooks into the SCI virtual machine to provide

@@ -39,6 +39,20 @@
 
 namespace Sci {
 
+int phant2VolumeCap() {
+	int cap = kPhant2VolumeMax;
+	if (ConfMan.hasKey(PHANT2_VOLUME_CAP_CONFIG_KEY)) {
+		cap = ConfMan.getInt(PHANT2_VOLUME_CAP_CONFIG_KEY);
+	}
+	if (cap < kPhant2VolumeCapMin) {
+		cap = kPhant2VolumeCapMin;
+	}
+	if (cap > kPhant2VolumeCapMax) {
+		cap = kPhant2VolumeCapMax;
+	}
+	return cap;
+}
+
 enum {
 	kSoundsMusicType = 0,
 	kSoundsSoundType = 1
@@ -1175,7 +1189,7 @@ void GuestAdditions::syncAudioVolumeGlobalsFromScummVM() const {
 	}
 
 	case GID_PHANTASMAGORIA2: {
-		const int16 masterVolume = (ConfMan.getInt("sfx_volume") + 1) * kPhant2VolumeMax / Audio::Mixer::kMaxMixerVolume;
+		const int16 masterVolume = (ConfMan.getInt("sfx_volume") + 1) * phant2VolumeCap() / Audio::Mixer::kMaxMixerVolume;
 		syncPhant2VolumeFromScummVM(masterVolume);
 		syncPhant2UI(masterVolume);
 		break;
@@ -1379,7 +1393,7 @@ void GuestAdditions::syncAudioVolumeGlobalsToScummVM(const int index, const reg_
 
 	case GID_PHANTASMAGORIA2:
 		if (index == kGlobalVarPhant2MasterVolume) {
-			const int16 masterVolume = value.toSint16() * Audio::Mixer::kMaxMixerVolume / kPhant2VolumeMax;
+			const int16 masterVolume = value.toSint16() * Audio::Mixer::kMaxMixerVolume / phant2VolumeCap();
 			ConfMan.setInt("music_volume", masterVolume);
 			ConfMan.setInt("sfx_volume", masterVolume);
 			ConfMan.setInt("speech_volume", masterVolume);
